@@ -3,15 +3,13 @@ using UnityEngine;
 public class PlayerMovement : MonoBehaviour
 {
     [Header("Настройки движения")]
-    public float moveSpeed = 5f;  // Скорость движения
-    public float jumpForce = 7f;  // Сила прыжка
-    public float gravityScale = 2f; // Гравитация
+    public float moveSpeed = 5f;      // Скорость движения
+    public float jumpForce = 7f;      // Сила прыжка
+    public float gravityScale = 2f;   // Масштаб гравитации
 
     [Header("Хитбокс")]
     public Vector2 standingColliderSize = new Vector2(1f, 2f); // Размер хитбокса в стоячем положении
-    public Vector2 crouchingColliderSize = new Vector2(1f, 1f); // Размер хитбокса в приседе
-    // Нижняя граница хитбокса. При изменении размера нижняя точка останется на этом значении.
-    public float hitboxBottom = -1f; 
+    public Vector2 crouchingColliderSize = new Vector2(1f, 1f);  // Размер хитбокса в приседе
 
     [Header("Компоненты")]
     private Rigidbody2D rb;
@@ -22,48 +20,66 @@ public class PlayerMovement : MonoBehaviour
     private bool isGrounded = false;
     private bool isCrouching = false;
 
+    // Переменная для хранения нижней границы хитбокса (в локальных координатах)
+    private float colliderBottom;
+
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
         spriteRenderer = GetComponent<SpriteRenderer>();
         animator = GetComponent<Animator>();
         boxCollider = GetComponent<BoxCollider2D>();
+
         rb.gravityScale = gravityScale;
 
-        // Устанавливаем исходный размер и смещение хитбокса для стоячего состояния
+        // Инициализируем хитбокс для стоячего состояния и сохраняем его нижнюю границу.
         boxCollider.size = standingColliderSize;
-        // Вычисляем смещение так, чтобы нижняя граница хитбокса была равна hitboxBottom:
-        boxCollider.offset = new Vector2(0f, hitboxBottom + standingColliderSize.y / 2f);
+        // Вычисляем нижнюю границу хитбокса:
+        // (offset.y - size.y/2) дает позицию нижней границы относительно объекта.
+        colliderBottom = boxCollider.offset.y - boxCollider.size.y / 2f;
+        // Обновляем offset так, чтобы нижняя граница осталась на месте:
+        boxCollider.offset = new Vector2(boxCollider.offset.x, colliderBottom + standingColliderSize.y / 2f);
     }
 
     void Update()
     {
         float moveInput = Input.GetAxisRaw("Horizontal");
 
+        // Если не приседаем, разрешаем движение; иначе горизонтальное движение блокируется.
         if (!isCrouching)
         {
             rb.velocity = new Vector2(moveInput * moveSpeed, rb.velocity.y);
         }
         else
         {
-            rb.velocity = new Vector2(0f, rb.velocity.y); // Блокировка движения при приседе
+            rb.velocity = new Vector2(0f, rb.velocity.y);
         }
 
         // Поворот персонажа в сторону движения
         if (moveInput > 0)
+        {
             spriteRenderer.flipX = false;
+        }
         else if (moveInput < 0)
+        {
             spriteRenderer.flipX = true;
+        }
 
-        // Проверка прыжка
+        // Прыжок, если на земле
         if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
+        {
             Jump();
+        }
 
-        // Обработка приседа
+        // Обработка приседа (клавиша "S")
         if (Input.GetKeyDown(KeyCode.S))
+        {
             Crouch(true);
+        }
         if (Input.GetKeyUp(KeyCode.S))
+        {
             Crouch(false);
+        }
 
         UpdateAnimation(moveInput);
     }
@@ -82,15 +98,16 @@ public class PlayerMovement : MonoBehaviour
 
         if (isCrouching)
         {
-            // При приседе меняем размер хитбокса и вычисляем смещение так, чтобы нижняя точка оставалась на hitboxBottom
+            // При приседе меняем размер хитбокса и вычисляем offset так,
+            // чтобы нижняя граница оставалась неизменной.
             boxCollider.size = crouchingColliderSize;
-            boxCollider.offset = new Vector2(0f, hitboxBottom + crouchingColliderSize.y / 2f);
+            boxCollider.offset = new Vector2(boxCollider.offset.x, colliderBottom + crouchingColliderSize.y / 2f);
         }
         else
         {
-            // Восстанавливаем размеры для стоячего состояния
+            // Восстанавливаем размеры и offset для стоячего состояния.
             boxCollider.size = standingColliderSize;
-            boxCollider.offset = new Vector2(0f, hitboxBottom + standingColliderSize.y / 2f);
+            boxCollider.offset = new Vector2(boxCollider.offset.x, colliderBottom + standingColliderSize.y / 2f);
             animator.SetTrigger("CrouchToIdle");
         }
     }
@@ -114,6 +131,8 @@ public class PlayerMovement : MonoBehaviour
     private void OnCollisionExit2D(Collision2D collision)
     {
         if (collision.gameObject.CompareTag("Ground"))
+        {
             isGrounded = false;
+        }
     }
 }
