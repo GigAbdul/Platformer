@@ -36,11 +36,11 @@ public class PlayerMovement : MonoBehaviour
         // Если персонаж не сидит, он может двигаться
         if (!isCrouching)
         {
-            rb.linearVelocity = new Vector2(moveInput * moveSpeed, rb.linearVelocity.y);
+            rb.velocity = new Vector2(moveInput * moveSpeed, rb.velocity.y);
         }
         else
         {
-            rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y); // Блокировка движения при сидении
+            rb.velocity = new Vector2(0f, rb.velocity.y);
         }
 
         // Поворот персонажа в сторону движения
@@ -75,7 +75,7 @@ public class PlayerMovement : MonoBehaviour
 
     void Jump()
     {
-        rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
+        rb.velocity = new Vector2(rb.velocity.x, jumpForce);
         animator.SetTrigger("JumpTrigger"); // Запуск анимации прыжка
         isGrounded = false; // Отключаем состояние "на земле"
     }
