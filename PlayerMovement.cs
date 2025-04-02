@@ -7,103 +7,99 @@ public class PlayerMovement : MonoBehaviour
     public float jumpForce = 7f;  // Сила прыжка
     public float gravityScale = 2f; // Гравитация
 
+    [Header("Хитбокс")]
+    public Vector2 standingColliderSize = new Vector2(1f, 2f); // Размер хитбокса в стоячем положении
+    public Vector2 crouchingColliderSize = new Vector2(1f, 1f); // Размер хитбокса в приседе
+    // Нижняя граница хитбокса. При изменении размера нижняя точка останется на этом значении.
+    public float hitboxBottom = -1f; 
+
     [Header("Компоненты")]
     private Rigidbody2D rb;
     private SpriteRenderer spriteRenderer;
     private Animator animator;
-    private BoxCollider2D boxCollider;  // Для изменения хитбокса
+    private BoxCollider2D boxCollider;
 
     private bool isGrounded = false;
     private bool isCrouching = false;
 
-    // Ползунок для изменения хитбокса
-    public Vector2 standingColliderSize = new Vector2(1f, 2f); // Стандартный размер хитбокса
-    public Vector2 crouchingColliderSize = new Vector2(1f, 1f); // Размер хитбокса в сидячем положении
-
     void Start()
     {
-        rb = GetComponent<Rigidbody2D>();  // Ищем Rigidbody2D
-        spriteRenderer = GetComponent<SpriteRenderer>();  // Ищем SpriteRenderer
-        animator = GetComponent<Animator>();  // Ищем Animator
-        boxCollider = GetComponent<BoxCollider2D>();  // Ищем BoxCollider2D
-        rb.gravityScale = gravityScale; // Устанавливаем гравитацию
+        rb = GetComponent<Rigidbody2D>();
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        animator = GetComponent<Animator>();
+        boxCollider = GetComponent<BoxCollider2D>();
+        rb.gravityScale = gravityScale;
+
+        // Устанавливаем исходный размер и смещение хитбокса для стоячего состояния
+        boxCollider.size = standingColliderSize;
+        // Вычисляем смещение так, чтобы нижняя граница хитбокса была равна hitboxBottom:
+        boxCollider.offset = new Vector2(0f, hitboxBottom + standingColliderSize.y / 2f);
     }
 
     void Update()
     {
-        float moveInput = Input.GetAxisRaw("Horizontal"); // Движение по X
+        float moveInput = Input.GetAxisRaw("Horizontal");
 
-        // Если персонаж не сидит, он может двигаться
         if (!isCrouching)
         {
             rb.velocity = new Vector2(moveInput * moveSpeed, rb.velocity.y);
         }
         else
         {
-            rb.velocity = new Vector2(0f, rb.velocity.y);
+            rb.velocity = new Vector2(0f, rb.velocity.y); // Блокировка движения при приседе
         }
 
         // Поворот персонажа в сторону движения
         if (moveInput > 0)
-        {
-            spriteRenderer.flipX = false; // Вправо - обычный спрайт
-        }
+            spriteRenderer.flipX = false;
         else if (moveInput < 0)
-        {
-            spriteRenderer.flipX = true; // Влево - отзеркаленный спрайт
-        }
+            spriteRenderer.flipX = true;
 
         // Проверка прыжка
         if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
-        {
             Jump();
-        }
 
-        // Проверка сидения (теперь на "S")
+        // Обработка приседа
         if (Input.GetKeyDown(KeyCode.S))
-        {
             Crouch(true);
-        }
         if (Input.GetKeyUp(KeyCode.S))
-        {
             Crouch(false);
-        }
 
-        // Выбор анимации
         UpdateAnimation(moveInput);
     }
 
     void Jump()
     {
         rb.velocity = new Vector2(rb.velocity.x, jumpForce);
-        animator.SetTrigger("JumpTrigger"); // Запуск анимации прыжка
-        isGrounded = false; // Отключаем состояние "на земле"
+        animator.SetTrigger("JumpTrigger");
+        isGrounded = false;
     }
 
     void Crouch(bool state)
     {
         isCrouching = state;
-        animator.SetBool("IsCrouching", state); // Обновляем состояние сидения
+        animator.SetBool("IsCrouching", state);
 
-        // Проверка, когда персонаж садится или встает
         if (isCrouching)
         {
-            boxCollider.size = crouchingColliderSize; // Уменьшаем хитбокс при сидении
-            boxCollider.offset = new Vector2(0f, -0.5f); // Смещаем хитбокс для сидения, чтобы не пересекался с полом
+            // При приседе меняем размер хитбокса и вычисляем смещение так, чтобы нижняя точка оставалась на hitboxBottom
+            boxCollider.size = crouchingColliderSize;
+            boxCollider.offset = new Vector2(0f, hitboxBottom + crouchingColliderSize.y / 2f);
         }
         else
         {
-            boxCollider.size = standingColliderSize; // Восстанавливаем обычный хитбокс
-            boxCollider.offset = Vector2.zero; // Восстанавливаем смещение хитбокса в исходное состояние
-            animator.SetTrigger("CrouchToIdle"); // Используем триггер для плавного перехода из сидячего состояния в стоячее
+            // Восстанавливаем размеры для стоячего состояния
+            boxCollider.size = standingColliderSize;
+            boxCollider.offset = new Vector2(0f, hitboxBottom + standingColliderSize.y / 2f);
+            animator.SetTrigger("CrouchToIdle");
         }
     }
 
     void UpdateAnimation(float moveInput)
     {
-        animator.SetFloat("Speed", Mathf.Abs(moveInput));  // Передаем скорость в Animator
-        animator.SetBool("IsGrounded", isGrounded); // Обновляем состояние "на земле"
-        animator.SetBool("IsCrouching", isCrouching); // Обновляем состояние "сидит"
+        animator.SetFloat("Speed", Mathf.Abs(moveInput));
+        animator.SetBool("IsGrounded", isGrounded);
+        animator.SetBool("IsCrouching", isCrouching);
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
@@ -111,15 +107,13 @@ public class PlayerMovement : MonoBehaviour
         if (collision.gameObject.CompareTag("Ground"))
         {
             isGrounded = true;
-            animator.ResetTrigger("JumpTrigger"); // Сбрасываем триггер прыжка при приземлении
+            animator.ResetTrigger("JumpTrigger");
         }
     }
 
     private void OnCollisionExit2D(Collision2D collision)
     {
         if (collision.gameObject.CompareTag("Ground"))
-        {
             isGrounded = false;
-        }
     }
 }
