@@ -197,6 +197,12 @@ IEnumerator ReturnToIdle()
     animator.SetTrigger("ReturnToIdle");
 }
 
+public void OnShootAnimationEnd()
+{
+    animator.SetTrigger("ReturnToIdle");
+}
+
+
 
     // ============================
 
