@@ -2,23 +2,20 @@ using UnityEngine;
 
 public class Bullet : MonoBehaviour
 {
-    private Vector2 direction;
-    public float speed = 10f;
+    private Vector2 moveDirection;
+    private float moveSpeed;
 
-    public void Initialize(Vector2 shootDirection)
+    // Метод инициализации пули с направлением и скоростью
+    public void Initialize(Vector2 direction, float speed)
     {
-        direction = shootDirection;
-        Destroy(gameObject, 2f); // Destroy bullet after 2 seconds to prevent memory leaks
+        moveDirection = direction.normalized;
+        moveSpeed = speed;
     }
 
     void Update()
     {
-        transform.Translate(direction * speed * Time.deltaTime);
+        transform.Translate(moveDirection * moveSpeed * Time.deltaTime);
     }
 
-    private void OnCollisionEnter2D(Collision2D collision)
-    {
-        // Implement what happens on collision, e.g., damage an enemy
-        Destroy(gameObject); // Destroy bullet on collision
-    }
+    // Дополнительно можно добавить уничтожение пули через некоторое время или по столкновению
 }

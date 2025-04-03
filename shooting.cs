@@ -2,36 +2,94 @@ using UnityEngine;
 
 public class PlayerShooting : MonoBehaviour
 {
-    // Префаб пули, который нужно создать в Unity и назначить в инспекторе
+    [Header("Projectile Settings")]
     public GameObject bulletPrefab;
-    // Точка, откуда будет появляться пуля (например, пустой GameObject, дочерний объект персонажа)
-    public Transform firePoint;
-    // Скорость движения пули
     public float bulletSpeed = 10f;
-    // Интервал между выстрелами (в секундах)
-    public float fireRate = 0.5f;
-    // Время, когда можно будет сделать следующий выстрел
-    private float nextFireTime = 0f;
+    
+    [Header("Weapon Settings")]
+    // Точка, откуда производится выстрел (например, дуло оружия).
+    public Transform weaponTransform;
+    
+    [Header("References")]
+    // Если хотите, чтобы анимации стрельбы воспроизводились, назначьте ссылку на Animator и SpriteRenderer.
+    public Animator animator;
+    public SpriteRenderer spriteRenderer;
 
     void Update()
     {
-        // Проверяем нажатие кнопки "Fire1" (обычно левая кнопка мыши или Ctrl)
-        if (Input.GetButton("Fire1") && Time.time > nextFireTime)
+        // Клавиша J для выстрела
+        if (Input.GetKeyDown(KeyCode.J))
         {
-            nextFireTime = Time.time + fireRate;
-            Shoot();
+            Vector2 shootDirection = DetermineShootDirection();
+            Shoot(shootDirection);
         }
     }
 
-    void Shoot()
+    // Определяет направление выстрела по нажатию клавиш.
+    // I – вверх, K – вниз, L – вправо, U – влево.
+    // Если никаких клавиш не нажато, используется направление из weaponTransform или направление, куда смотрит персонаж.
+    Vector2 DetermineShootDirection()
     {
-        // Создаем экземпляр пули в позиции firePoint с ее поворотом
-        GameObject bullet = Instantiate(bulletPrefab, firePoint.position, firePoint.rotation);
-        // Получаем компонент Rigidbody2D пули и задаем ей скорость в направлении firePoint.right
-        Rigidbody2D rb = bullet.GetComponent<Rigidbody2D>();
-        if (rb != null)
+        Vector2 direction = Vector2.zero;
+
+        if (Input.GetKey(KeyCode.I))
+            direction += Vector2.up;
+        if (Input.GetKey(KeyCode.K))
+            direction += Vector2.down;
+        if (Input.GetKey(KeyCode.L))
+            direction += Vector2.right;
+        if (Input.GetKey(KeyCode.U))
+            direction += Vector2.left;
+
+        // Если направление не задано, берём его из weaponTransform или из направления взгляда персонажа
+        if (direction == Vector2.zero)
         {
-            rb.velocity = firePoint.right * bulletSpeed;
+            if (weaponTransform != null)
+            {
+                direction = weaponTransform.right;
+            }
+            else if (spriteRenderer != null)
+            {
+                direction = spriteRenderer.flipX ? Vector2.left : Vector2.right;
+            }
+            else
+            {
+                direction = Vector2.right; // Значение по умолчанию
+            }
+        }
+
+        return direction.normalized;
+    }
+
+    void Shoot(Vector2 direction)
+    {
+        if (bulletPrefab != null)
+        {
+            // Выбираем позицию выстрела: если weaponTransform задан – используем её, иначе позицию объекта
+            Vector3 spawnPosition = (weaponTransform != null) ? weaponTransform.position : transform.position;
+            GameObject bullet = Instantiate(bulletPrefab, spawnPosition, Quaternion.identity);
+
+            // Инициализируем пулю
+            Bullet bulletComponent = bullet.GetComponent<Bullet>();
+            if (bulletComponent != null)
+            {
+                bulletComponent.Initialize(direction, bulletSpeed);
+            }
+
+            // Запуск анимаций стрельбы (если назначены)
+            if (animator != null)
+            {
+                if (direction == Vector2.up)
+                    animator.SetTrigger("ShootUp");
+                else if (direction == Vector2.down)
+                    animator.SetTrigger("ShootDown");
+                else if (direction == Vector2.left)
+                    animator.SetTrigger("ShootLeft");
+                else if (direction == Vector2.right)
+                    animator.SetTrigger("ShootRight");
+                else
+                    animator.SetTrigger("Shoot");
+            }
         }
     }
 }
