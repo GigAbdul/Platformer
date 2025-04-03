@@ -16,6 +16,4 @@ public class Bullet : MonoBehaviour
     {
         transform.Translate(moveDirection * moveSpeed * Time.deltaTime);
     }
-
-    // Дополнительно можно добавить уничтожение пули через некоторое время или по столкновению
 }

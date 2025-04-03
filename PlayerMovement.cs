@@ -13,10 +13,6 @@ public class PlayerMovement : MonoBehaviour
     public Vector2 standingColliderSize = new Vector2(1f, 2f);
     public Vector2 crouchingColliderSize = new Vector2(1f, 1f);
 
-    [Header("Projectile Settings")]
-    public GameObject bulletPrefab;
-    public float bulletSpeed = 10f;
-
     [Header("Components")]
     private Rigidbody2D rb;
     private SpriteRenderer spriteRenderer;
@@ -46,7 +42,6 @@ public class PlayerMovement : MonoBehaviour
         HandleMovement();
         HandleCrouch();
         HandleJump();
-        HandleShooting();
         UpdateAnimation();
     }
 
@@ -54,10 +49,10 @@ public class PlayerMovement : MonoBehaviour
     {
         float moveInput = Input.GetAxisRaw("Horizontal");
         float currentSpeed = isCrouching ? crouchSpeed : moveSpeed;
-        rb.linearVelocity = new Vector2(moveInput * currentSpeed, rb.linearVelocity.y);
+        rb.velocity = new Vector2(moveInput * currentSpeed, rb.velocity.y);
 
         if (moveInput != 0)
-            spriteRenderer.flipX = moveInput < 0; // Flip sprite based on movement direction
+            spriteRenderer.flipX = moveInput < 0;
     }
 
     void HandleJump()
@@ -71,7 +66,7 @@ public class PlayerMovement : MonoBehaviour
     void Jump()
     {
         canJump = false;
-        rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
+        rb.velocity = new Vector2(rb.velocity.x, jumpForce);
         animator.SetTrigger("JumpStart");
         isGrounded = false;
         Invoke("ResetJump", jumpCooldown);
@@ -98,74 +93,17 @@ public class PlayerMovement : MonoBehaviour
         boxCollider.offset = new Vector2(boxCollider.offset.x, colliderBottom + (state ? crouchingColliderSize.y : standingColliderSize.y) / 2f);
 
         if (state)
-            animator.SetTrigger("Crouch"); // Trigger crouch animation.
+            animator.SetTrigger("Crouch");
         else
-            animator.SetTrigger("StandUp"); // Trigger stand-up animation
+            animator.SetTrigger("StandUp");
     }
-
-    void HandleShooting()
-    {
-        // Only allow shooting when not crouching
-        if (isCrouching)
-            return;
-
-        if (Input.GetKeyDown(KeyCode.J)) // Shoot key
-        {
-            Vector2 shootDirection = DetermineShootDirection();
-            Shoot(shootDirection);
-        }
-    }
-
-    Vector2 DetermineShootDirection()
-{
-    Vector2 direction = Vector2.zero;
-
-    // Check for directions based on keys pressed
-    if (Input.GetKey(KeyCode.I)) 
-        direction += Vector2.up;
-    if (Input.GetKey(KeyCode.J)) 
-        direction += Vector2.left;
-    if (Input.GetKey(KeyCode.K)) 
-        direction += Vector2.down;
-    if (Input.GetKey(KeyCode.L)) 
-        direction += Vector2.right;
-
-    // Debug to check the direction
-    Debug.Log("Shooting Direction: " + direction);
-    return direction.normalized;
-}
-
-    void Shoot(Vector2 direction)
-{
-    // Ensure the direction is valid and bulletPrefab is assigned
-    if (direction != Vector2.zero && bulletPrefab != null)
-    {
-        // Debug to verify shoot execution
-        Debug.Log("Shooting in direction: " + direction);
-
-        // Set the appropriate shooting animation based on direction
-        if (direction == Vector2.up)
-            animator.SetTrigger("ShootUp");
-        else if (direction == Vector2.down)
-            animator.SetTrigger("ShootDown");
-        else if (direction == Vector2.left)
-            animator.SetTrigger("ShootLeft");
-        else if (direction == Vector2.right)
-            animator.SetTrigger("ShootRight");
-
-        // Instantiate bullet and set its direction
-        GameObject bullet = Instantiate(bulletPrefab, transform.position, Quaternion.identity);
-        Bullet bulletComponent = bullet.GetComponent<Bullet>();
-        bulletComponent.Initialize(direction); // Pass the direction to the bullet
-    }
-}
 
     void UpdateAnimation()
     {
-        animator.SetFloat("Speed", Mathf.Abs(rb.linearVelocity.x));
+        animator.SetFloat("Speed", Mathf.Abs(rb.velocity.x));
         animator.SetBool("IsGrounded", isGrounded);
         animator.SetBool("IsCrouching", isCrouching);
-        animator.SetFloat("VerticalSpeed", rb.linearVelocity.y); // For jump/fall animations
+        animator.SetFloat("VerticalSpeed", rb.velocity.y);
     }
 
     private void OnCollisionEnter2D(Collision2D collision)

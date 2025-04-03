@@ -5,19 +5,19 @@ public class PlayerShooting : MonoBehaviour
     [Header("Projectile Settings")]
     public GameObject bulletPrefab;
     public float bulletSpeed = 10f;
-    
+
     [Header("Weapon Settings")]
-    // Точка, откуда производится выстрел (например, дуло оружия).
+    // Опционально: точка, откуда производится выстрел (например, дуло оружия)
     public Transform weaponTransform;
     
-    [Header("References")]
-    // Если хотите, чтобы анимации стрельбы воспроизводились, назначьте ссылку на Animator и SpriteRenderer.
+    [Header("Animation & Sprite")]
+    // Ссылки на компоненты для анимации стрельбы (если нужны)
     public Animator animator;
     public SpriteRenderer spriteRenderer;
 
     void Update()
     {
-        // Клавиша J для выстрела
+        // Клавиша J используется для выстрела
         if (Input.GetKeyDown(KeyCode.J))
         {
             Vector2 shootDirection = DetermineShootDirection();
@@ -25,9 +25,9 @@ public class PlayerShooting : MonoBehaviour
         }
     }
 
-    // Определяет направление выстрела по нажатию клавиш.
+    // Определение направления выстрела на основе нажатых клавиш:
     // I – вверх, K – вниз, L – вправо, U – влево.
-    // Если никаких клавиш не нажато, используется направление из weaponTransform или направление, куда смотрит персонаж.
+    // Если клавиши не нажаты, направление берётся из weaponTransform или из направления взгляда персонажа.
     Vector2 DetermineShootDirection()
     {
         Vector2 direction = Vector2.zero;
@@ -41,21 +41,14 @@ public class PlayerShooting : MonoBehaviour
         if (Input.GetKey(KeyCode.U))
             direction += Vector2.left;
 
-        // Если направление не задано, берём его из weaponTransform или из направления взгляда персонажа
         if (direction == Vector2.zero)
         {
             if (weaponTransform != null)
-            {
                 direction = weaponTransform.right;
-            }
             else if (spriteRenderer != null)
-            {
                 direction = spriteRenderer.flipX ? Vector2.left : Vector2.right;
-            }
             else
-            {
                 direction = Vector2.right; // Значение по умолчанию
-            }
         }
 
         return direction.normalized;
@@ -63,20 +56,9 @@ public class PlayerShooting : MonoBehaviour
 
     void Shoot(Vector2 direction)
     {
-        if (bulletPrefab != null)
+        if (direction != Vector2.zero && bulletPrefab != null)
         {
-            // Выбираем позицию выстрела: если weaponTransform задан – используем её, иначе позицию объекта
-            Vector3 spawnPosition = (weaponTransform != null) ? weaponTransform.position : transform.position;
-            GameObject bullet = Instantiate(bulletPrefab, spawnPosition, Quaternion.identity);
-
-            // Инициализируем пулю
-            Bullet bulletComponent = bullet.GetComponent<Bullet>();
-            if (bulletComponent != null)
-            {
-                bulletComponent.Initialize(direction, bulletSpeed);
-            }
-
-            // Запуск анимаций стрельбы (если назначены)
+            // Запуск анимации стрельбы (если задана)
             if (animator != null)
             {
                 if (direction == Vector2.up)
@@ -89,6 +71,17 @@ public class PlayerShooting : MonoBehaviour
                     animator.SetTrigger("ShootRight");
                 else
                     animator.SetTrigger("Shoot");
+            }
+
+            // Определяем позицию создания пули
+            Vector3 spawnPosition = (weaponTransform != null) ? weaponTransform.position : transform.position;
+            GameObject bullet = Instantiate(bulletPrefab, spawnPosition, Quaternion.identity);
+
+            // Инициализируем пулю
+            Bullet bulletComponent = bullet.GetComponent<Bullet>();
+            if (bulletComponent != null)
+            {
+                bulletComponent.Initialize(direction, bulletSpeed);
             }
         }
     }
