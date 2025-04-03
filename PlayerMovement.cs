@@ -174,43 +174,42 @@ void Shoot(Vector2 direction, Transform specificFirePoint)
         bulletRb.velocity = direction.normalized * bulletSpeed;
     }
 
-    // Запускаем анимацию выстрела, принудительно прерывая любую текущую анимацию,
-    // и сразу же переключаемся в состояние Idle.
     if (animator != null)
     {
+        // Запускаем анимацию выстрела с немедленным стартом (layer 0)
         if (direction == Vector2.up)
-            animator.Play("ShootUp", -1, 0f);
+            animator.Play("ShootUp", 0, 0f);
         else if (direction == Vector2.down)
-            animator.Play("ShootDown", -1, 0f);
+            animator.Play("ShootDown", 0, 0f);
         else if (direction == Vector2.left)
-            animator.Play("ShootLeft", -1, 0f);
+            animator.Play("ShootLeft", 0, 0f);
         else if (direction == Vector2.right)
-            animator.Play("ShootRight", -1, 0f);
+            animator.Play("ShootRight", 0, 0f);
 
-        // Немедленный переход в Idle без задержки
-        animator.Play("Idle", -1, 0f);
+        // Переключаемся на Idle уже в следующем кадре, чтобы анимация выстрела не затягивалась
+        StartCoroutine(SwitchToIdle());
     }
 }
 
-
-// Coroutine для перехода в состояние Idle после анимации выстрела
-IEnumerator ReturnToIdle()
+// Coroutine, которая ждет один кадр и затем переключает анимацию в Idle
+IEnumerator SwitchToIdle()
 {
-    yield return new WaitForSeconds(0.3f);
+    yield return null; // ждем до следующего кадра
     if (animator != null)
     {
-        animator.Play("Idle", -1, 0f);
+        animator.Play("Idle", 0, 0f);
     }
 }
 
-// Метод, который можно вызвать из Animation Event в конце клипа выстрела
+// Метод, который можно вызвать через Animation Event (если понадобится)
 public void OnShootAnimationEnd()
 {
     if (animator != null)
     {
-        animator.Play("Idle", -1, 0f);
+        animator.Play("Idle", 0, 0f);
     }
 }
+
 
 
     // ============================
