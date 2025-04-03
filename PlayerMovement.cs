@@ -158,11 +158,11 @@ void Shoot(Vector2 direction, Transform specificFirePoint)
         return;
     }
 
-    // Вычисляем угол в градусах по направлению
+    // Вычисляем угол поворота пули по направлению выстрела
     float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
     Quaternion bulletRotation = Quaternion.Euler(0, 0, angle);
 
-    // Создаём пулю с нужным поворотом
+    // Создаём пулю с нужной позицией и поворотом
     GameObject bullet = Instantiate(bulletPrefab, specificFirePoint.position, bulletRotation);
 
     // Задаём скорость пули через Rigidbody2D
@@ -172,7 +172,7 @@ void Shoot(Vector2 direction, Transform specificFirePoint)
         bulletRb.velocity = direction.normalized * bulletSpeed;
     }
 
-    // Запускаем анимации стрельбы, если назначены
+    // Запускаем анимацию выстрела, если аниматор назначен
     if (animator != null)
     {
         if (direction == Vector2.up)
@@ -183,8 +183,20 @@ void Shoot(Vector2 direction, Transform specificFirePoint)
             animator.SetTrigger("ShootLeft");
         else if (direction == Vector2.right)
             animator.SetTrigger("ShootRight");
+
+        // Запускаем Coroutine для возврата в состояние idle после анимации выстрела.
+        // Здесь 0.3 секунды – примерное время длительности анимации, скорректируйте по необходимости.
+        StartCoroutine(ReturnToIdle());
     }
 }
+
+// Coroutine, которая ждёт окончание анимации выстрела и затем устанавливает триггер ReturnToIdle
+IEnumerator ReturnToIdle()
+{
+    yield return new WaitForSeconds(0.3f);
+    animator.SetTrigger("ReturnToIdle");
+}
+
 
     // ============================
 
