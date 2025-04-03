@@ -174,7 +174,8 @@ void Shoot(Vector2 direction, Transform specificFirePoint)
         bulletRb.velocity = direction.normalized * bulletSpeed;
     }
 
-    // Немедленно запускаем анимацию выстрела, прерывая текущую анимацию
+    // Запускаем анимацию выстрела, принудительно прерывая любую текущую анимацию,
+    // и сразу же переключаемся в состояние Idle.
     if (animator != null)
     {
         if (direction == Vector2.up)
@@ -186,11 +187,11 @@ void Shoot(Vector2 direction, Transform specificFirePoint)
         else if (direction == Vector2.right)
             animator.Play("ShootRight", -1, 0f);
 
-        // Запускаем Coroutine для перехода в состояние Idle после завершения анимации выстрела.
-        // Время ожидания (0.3 сек) подберите в соответствии с длительностью вашей анимации.
-        StartCoroutine(ReturnToIdle());
+        // Немедленный переход в Idle без задержки
+        animator.Play("Idle", -1, 0f);
     }
 }
+
 
 // Coroutine для перехода в состояние Idle после анимации выстрела
 IEnumerator ReturnToIdle()
