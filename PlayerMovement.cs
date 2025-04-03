@@ -174,36 +174,42 @@ void Shoot(Vector2 direction, Transform specificFirePoint)
         bulletRb.velocity = direction.normalized * bulletSpeed;
     }
 
-    // Запускаем анимацию выстрела, если аниматор назначен
+    // Немедленно запускаем анимацию выстрела, прерывая текущую анимацию
     if (animator != null)
     {
         if (direction == Vector2.up)
-            animator.SetTrigger("ShootUp");
+            animator.Play("ShootUp", -1, 0f);
         else if (direction == Vector2.down)
-            animator.SetTrigger("ShootDown");
+            animator.Play("ShootDown", -1, 0f);
         else if (direction == Vector2.left)
-            animator.SetTrigger("ShootLeft");
+            animator.Play("ShootLeft", -1, 0f);
         else if (direction == Vector2.right)
-            animator.SetTrigger("ShootRight");
+            animator.Play("ShootRight", -1, 0f);
 
-        // Запускаем Coroutine для возврата в состояние idle после анимации выстрела.
-        // Здесь 0.3 секунды – примерное время длительности анимации, скорректируйте по необходимости.
+        // Запускаем Coroutine для перехода в состояние Idle после завершения анимации выстрела.
+        // Время ожидания (0.3 сек) подберите в соответствии с длительностью вашей анимации.
         StartCoroutine(ReturnToIdle());
     }
 }
 
-// Coroutine, которая ждёт окончание анимации выстрела и затем устанавливает триггер ReturnToIdle
+// Coroutine для перехода в состояние Idle после анимации выстрела
 IEnumerator ReturnToIdle()
 {
     yield return new WaitForSeconds(0.3f);
-    animator.SetTrigger("ReturnToIdle");
+    if (animator != null)
+    {
+        animator.Play("Idle", -1, 0f);
+    }
 }
 
+// Метод, который можно вызвать из Animation Event в конце клипа выстрела
 public void OnShootAnimationEnd()
 {
-    animator.SetTrigger("ReturnToIdle");
+    if (animator != null)
+    {
+        animator.Play("Idle", -1, 0f);
+    }
 }
-
 
 
     // ============================
