@@ -2,18 +2,46 @@ using UnityEngine;
 
 public class Bullet : MonoBehaviour
 {
-    private Vector2 moveDirection;
-    private float moveSpeed;
+    [Header("Bullet Settings")]
+    [Tooltip("Сколько урона наносит пуля.")]
+    public float damage = 10f;
+    
+    [Tooltip("Время существования пули, после чего она уничтожится автоматически.")]
+    public float lifeTime = 2f;
 
-    // Метод инициализации пули с направлением и скоростью
-    public void Initialize(Vector2 direction, float speed)
+    [Tooltip("Префаб эффекта при попадании (частицы, вспышка и т.д.). Не обязателен.")]
+    public GameObject impactEffect;
+
+    void Start()
     {
-        moveDirection = direction.normalized;
-        moveSpeed = speed;
+        // Уничтожить пулю через lifeTime секунд,
+        // если вдруг она ни во что не врежется
+        Destroy(gameObject, lifeTime);
     }
 
-    void Update()
+    private void OnCollisionEnter2D(Collision2D collision)
     {
-        transform.Translate(moveDirection * moveSpeed * Time.deltaTime);
+        // 1. Попробуем получить компонент здоровья (или врага)
+        //    Здесь предполагается, что у врага есть скрипт EnemyHealth
+        //    с методом TakeDamage(float damageAmount).
+        EnemyHealth enemyHealth = collision.gameObject.GetComponent<EnemyHealth>();
+        
+        // Если у объекта есть такой скрипт — наносим урон
+        if (enemyHealth != null)
+        {
+            enemyHealth.TakeDamage(damage);
+        }
+
+        // 2. Если есть эффект попадания (частицы/вспышка) — создаём его
+        //    на месте столкновения. 
+        //    Можно также использовать collision.contacts[0].point
+        //    чтобы точнее разместить эффект.
+        if (impactEffect != null)
+        {
+            Instantiate(impactEffect, transform.position, Quaternion.identity);
+        }
+
+        // 3. Уничтожаем пулю
+        Destroy(gameObject);
     }
 }
