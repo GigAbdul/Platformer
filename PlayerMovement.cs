@@ -1,6 +1,4 @@
 using UnityEngine;
-using System.Collections;
-
 
 public class PlayerMovement : MonoBehaviour
 {
@@ -30,16 +28,20 @@ public class PlayerMovement : MonoBehaviour
     // Блок для стрельбы
     // ============================
     [Header("Shooting Settings")]
-    [Tooltip("Префаб пули (должен иметь Rigidbody2D).")]
+    [Tooltip("Префаб пули (должен иметь Rigidbody2D + Bullet.cs).")]
     public GameObject bulletPrefab;
     [Tooltip("Скорость полёта пули.")]
     public float bulletSpeed = 10f;
-    
+
     [Header("Fire Points")]
-    public Transform firePointLeft;
-    public Transform firePointRight;
+    [Tooltip("Точка выстрела вверх.")]
     public Transform firePointUp;
+    [Tooltip("Точка выстрела вправо.")]
+    public Transform firePointRight;
+    [Tooltip("Точка выстрела вниз.")]
     public Transform firePointDown;
+    [Tooltip("Точка выстрела влево.")]
+    public Transform firePointLeft;
 
     void Start()
     {
@@ -51,10 +53,7 @@ public class PlayerMovement : MonoBehaviour
         rb.gravityScale = gravityScale;
         boxCollider.size = standingColliderSize;
         colliderBottom = boxCollider.offset.y - boxCollider.size.y / 2f;
-        boxCollider.offset = new Vector2(
-            boxCollider.offset.x,
-            colliderBottom + standingColliderSize.y / 2f
-        );
+        boxCollider.offset = new Vector2(boxCollider.offset.x, colliderBottom + standingColliderSize.y / 2f);
     }
 
     void Update()
@@ -62,8 +61,8 @@ public class PlayerMovement : MonoBehaviour
         HandleMovement();
         HandleCrouch();
         HandleJump();
-        
-        // Стрельба
+
+        // Логика стрельбы
         HandleShooting();
 
         UpdateAnimation();
@@ -93,7 +92,7 @@ public class PlayerMovement : MonoBehaviour
         rb.velocity = new Vector2(rb.velocity.x, jumpForce);
         animator.SetTrigger("JumpStart");
         isGrounded = false;
-        Invoke("ResetJump", jumpCooldown);
+        Invoke(nameof(ResetJump), jumpCooldown);
     }
 
     void ResetJump()
@@ -114,8 +113,10 @@ public class PlayerMovement : MonoBehaviour
         isCrouching = state;
         animator.SetBool("IsCrouching", state);
         boxCollider.size = state ? crouchingColliderSize : standingColliderSize;
-        boxCollider.offset = new Vector2(boxCollider.offset.x,
-            colliderBottom + (state ? crouchingColliderSize.y : standingColliderSize.y) / 2f);
+        boxCollider.offset = new Vector2(
+            boxCollider.offset.x,
+            colliderBottom + (state ? crouchingColliderSize.y : standingColliderSize.y) / 2f
+        );
 
         if (state)
             animator.SetTrigger("Crouch");
@@ -130,89 +131,64 @@ public class PlayerMovement : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.J))
         {
-            // Смотрим влево
-            spriteRenderer.flipX = true;
+            // стрельба влево
+            spriteRenderer.flipX = true; 
             Shoot(Vector2.left, firePointLeft);
         }
         else if (Input.GetKeyDown(KeyCode.L))
         {
-            // Смотрим вправо
+            // стрельба вправо
             spriteRenderer.flipX = false;
             Shoot(Vector2.right, firePointRight);
         }
         else if (Input.GetKeyDown(KeyCode.I))
         {
-            // Стреляем вверх (flipX не меняем, т.к. это горизонтальный флип)
+            // стрельба вверх
             Shoot(Vector2.up, firePointUp);
         }
         else if (Input.GetKeyDown(KeyCode.K))
         {
-            // Стреляем вниз
+            // стрельба вниз
             Shoot(Vector2.down, firePointDown);
         }
     }
 
-void Shoot(Vector2 direction, Transform specificFirePoint)
-{
-    if (bulletPrefab == null || specificFirePoint == null)
+    /// <summary>
+    /// Создаём пулю и ставим анимацию стрельбы
+    /// </summary>
+    void Shoot(Vector2 direction, Transform specificFirePoint)
     {
-        Debug.LogWarning("Не назначен bulletPrefab или один из firePoint-ов!");
-        return;
-    }
+        if (bulletPrefab == null || specificFirePoint == null)
+        {
+            Debug.LogWarning("Не назначен bulletPrefab или один из firePoint!");
+            return;
+        }
 
-    // Вычисляем угол поворота пули по направлению выстрела
-    float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-    Quaternion bulletRotation = Quaternion.Euler(0, 0, angle);
-
-    // Создаём пулю с нужной позицией и поворотом
-    GameObject bullet = Instantiate(bulletPrefab, specificFirePoint.position, bulletRotation);
-
-    // Задаём скорость пули через Rigidbody2D
-    Rigidbody2D bulletRb = bullet.GetComponent<Rigidbody2D>();
-    if (bulletRb != null)
-    {
-        bulletRb.velocity = direction.normalized * bulletSpeed;
-    }
-
-    if (animator != null)
-    {
-        // Запускаем анимацию выстрела с немедленным стартом (layer 0)
+        // Сначала вызываем анимацию: 1 триггер + направление (Int)
+        int shootDir = 0; // 0 = up, 1 = right, 2 = down, 3 = left (как пример)
+        
         if (direction == Vector2.up)
-            animator.Play("ShootUp", 0, 0f);
-        else if (direction == Vector2.down)
-            animator.Play("ShootDown", 0, 0f);
-        else if (direction == Vector2.left)
-            animator.Play("ShootLeft", 0, 0f);
+            shootDir = 0;
         else if (direction == Vector2.right)
-            animator.Play("ShootRight", 0, 0f);
+            shootDir = 1;
+        else if (direction == Vector2.down)
+            shootDir = 2;
+        else if (direction == Vector2.left)
+            shootDir = 3;
 
-        // Переключаемся на Idle уже в следующем кадре, чтобы анимация выстрела не затягивалась
-        StartCoroutine(SwitchToIdle());
+        animator.SetInteger("ShootDir", shootDir);
+        animator.SetTrigger("Shoot");
+
+        // Создаём пулю в нужной точке
+        GameObject bullet = Instantiate(bulletPrefab, specificFirePoint.position, Quaternion.identity);
+
+        // Задаём скорость пуле
+        Rigidbody2D bulletRb = bullet.GetComponent<Rigidbody2D>();
+        if (bulletRb != null)
+        {
+            bulletRb.velocity = direction.normalized * bulletSpeed;
+        }
     }
-}
-
-// Coroutine, которая ждет один кадр и затем переключает анимацию в Idle
-IEnumerator SwitchToIdle()
-{
-    yield return null; // ждем до следующего кадра
-    if (animator != null)
-    {
-        animator.Play("Idle", 0, 0f);
-    }
-}
-
-// Метод, который можно вызвать через Animation Event (если понадобится)
-public void OnShootAnimationEnd()
-{
-    if (animator != null)
-    {
-        animator.Play("Idle", 0, 0f);
-    }
-}
-
-
-
-    // ============================
 
     void UpdateAnimation()
     {

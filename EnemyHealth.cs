@@ -13,7 +13,7 @@ public class EnemyHealth : MonoBehaviour
     public void TakeDamage(float damageAmount)
     {
         currentHealth -= damageAmount;
-        Debug.Log("Enemy took damage. Current HP = " + currentHealth);
+        Debug.Log($"Enemy took {damageAmount} damage. HP = {currentHealth}");
 
         if (currentHealth <= 0)
         {
@@ -23,8 +23,7 @@ public class EnemyHealth : MonoBehaviour
 
     void Die()
     {
-        // Здесь можно проиграть анимацию смерти, заспавнить эффект, дать очки игроку и т.п.
-        // А затем уничтожить врага (или отключить его).
+        // Здесь логика смерти: анимация, эффекты, очки
         Debug.Log("Enemy died!");
         Destroy(gameObject);
     }
