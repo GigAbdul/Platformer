@@ -168,6 +168,15 @@ public class PlayerMovement : MonoBehaviour
         {
             bulletRb.velocity = direction.normalized * bulletSpeed;
         }
+
+        if (direction == Vector2.up)
+        animator.SetTrigger("ShootUp");
+    else if (direction == Vector2.down)
+        animator.SetTrigger("ShootDown");
+    else if (direction == Vector2.left)
+        animator.SetTrigger("ShootLeft");
+    else if (direction == Vector2.right)
+        animator.SetTrigger("ShootRight");
     }
     // ============================
 
