@@ -51,6 +51,7 @@ public class PlayerMovement : MonoBehaviour
         float currentSpeed = isCrouching ? crouchSpeed : moveSpeed;
         rb.velocity = new Vector2(moveInput * currentSpeed, rb.velocity.y);
 
+        // Изменяем направление взгляда персонажа
         if (moveInput != 0)
             spriteRenderer.flipX = moveInput < 0;
     }
