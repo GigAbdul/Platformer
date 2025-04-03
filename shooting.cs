@@ -2,71 +2,91 @@ using UnityEngine;
 
 public class PlayerShooting : MonoBehaviour
 {
-    [Header("Projectile Settings")]
-    public GameObject bulletPrefab;
-    public float bulletSpeed = 10f;
+    [Header("Bullet Settings")]
+    public GameObject bulletPrefab;   // Префаб пули
+    public float bulletSpeed = 10f;   // Скорость полёта пули
+    public Transform firePoint;       // Точка выстрела
 
-    [Header("Weapon Settings")]
-    // Точка, откуда производится выстрел (например, дуло оружия). Если не задана, используется позиция объекта.
-    public Transform weaponTransform;
-    
-    [Header("Animation & Sprite")]
-    // Ссылки на компоненты для анимации стрельбы и управления направлением взгляда
-    public Animator animator;
-    public SpriteRenderer spriteRenderer;
+    private SpriteRenderer spriteRenderer; // Если нужно поворачивать спрайт персонажа
+
+    void Start()
+    {
+        // Если скрипт на персонаже, и у него есть SpriteRenderer
+        // Если нет — можно убрать эту строку
+        spriteRenderer = GetComponent<SpriteRenderer>();
+    }
 
     void Update()
     {
-        // Выстрел вверх
-        if (Input.GetKeyDown(KeyCode.I))
-        {
-            Shoot(Vector2.up);
-        }
-        // Выстрел влево и поворот влево
         if (Input.GetKeyDown(KeyCode.J))
         {
-            if (spriteRenderer != null)
-                spriteRenderer.flipX = true;
+            // Смотрим влево, стреляем влево
+            FaceDirection(Vector2.left);
             Shoot(Vector2.left);
         }
-        // Выстрел вниз
+
         if (Input.GetKeyDown(KeyCode.K))
         {
+            // Смотрим вниз, стреляем вниз
+            // Тут может понадобиться повернуть спрайт на 90 градусов
+            FaceDirection(Vector2.down);
             Shoot(Vector2.down);
         }
-        // Выстрел вправо и поворот вправо
+
         if (Input.GetKeyDown(KeyCode.L))
         {
-            if (spriteRenderer != null)
-                spriteRenderer.flipX = false;
+            // Смотрим вправо, стреляем вправо
+            FaceDirection(Vector2.right);
             Shoot(Vector2.right);
+        }
+
+        if (Input.GetKeyDown(KeyCode.I))
+        {
+            // Смотрим вверх, стреляем вверх
+            FaceDirection(Vector2.up);
+            Shoot(Vector2.up);
         }
     }
 
     void Shoot(Vector2 direction)
     {
-        // Запуск соответствующей анимации стрельбы
-        if (animator != null)
+        if (bulletPrefab == null || firePoint == null)
         {
-            if (direction == Vector2.up)
-                animator.SetTrigger("ShootUp");
-            else if (direction == Vector2.down)
-                animator.SetTrigger("ShootDown");
-            else if (direction == Vector2.left)
-                animator.SetTrigger("ShootLeft");
+            Debug.LogWarning("Не заданы префаб пули или firePoint!");
+            return;
+        }
+
+        // Создаём пулю
+        GameObject bullet = Instantiate(bulletPrefab, firePoint.position, Quaternion.identity);
+
+        // У пули должен быть Rigidbody2D, чтобы задать скорость
+        Rigidbody2D rb = bullet.GetComponent<Rigidbody2D>();
+        if (rb != null)
+        {
+            rb.velocity = direction.normalized * bulletSpeed;
+        }
+    }
+
+    // Если нужно «поворачивать» персонажа или его оружие:
+    // Самый простой случай — для лево/право меняем flipX
+    // а для вверх/вниз можно добавить дополнительную логику, если у вас есть отдельное оружие, которое крутится
+    void FaceDirection(Vector2 direction)
+    {
+        // Простой вариант — если влево, flipX = true, если вправо, flipX = false
+        // А вниз/вверх тут не трогаем, т.к. обычно flipX отвечает только за горизонтальное направление
+        if (spriteRenderer != null)
+        {
+            if (direction == Vector2.left)
+            {
+                spriteRenderer.flipX = true;
+            }
             else if (direction == Vector2.right)
-                animator.SetTrigger("ShootRight");
+            {
+                spriteRenderer.flipX = false;
+            }
         }
 
-        // Определяем позицию появления пули
-        Vector3 spawnPosition = (weaponTransform != null) ? weaponTransform.position : transform.position;
-        GameObject bullet = Instantiate(bulletPrefab, spawnPosition, Quaternion.identity);
-
-        // Инициализация пули с заданным направлением и скоростью
-        Bullet bulletComponent = bullet.GetComponent<Bullet>();
-        if (bulletComponent != null)
-        {
-            bulletComponent.Initialize(direction, bulletSpeed);
-        }
+        // Если хотите обрабатывать спрайт или анимацию для вверх/вниз — придётся
+        // делать отдельные повороты или анимационные состояния
     }
 }
