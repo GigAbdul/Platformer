@@ -30,10 +30,14 @@ public class PlayerMovement : MonoBehaviour
     [Header("Shooting Settings")]
     [Tooltip("Префаб пули (должен иметь Rigidbody2D).")]
     public GameObject bulletPrefab;
-    [Tooltip("Точка выстрела (пустой объект в сцене, обычно дочерний персонажу).")]
-    public Transform firePoint;
     [Tooltip("Скорость полёта пули.")]
     public float bulletSpeed = 10f;
+    
+    [Header("Fire Points")]
+    public Transform firePointLeft;
+    public Transform firePointRight;
+    public Transform firePointUp;
+    public Transform firePointDown;
 
     void Start()
     {
@@ -45,7 +49,10 @@ public class PlayerMovement : MonoBehaviour
         rb.gravityScale = gravityScale;
         boxCollider.size = standingColliderSize;
         colliderBottom = boxCollider.offset.y - boxCollider.size.y / 2f;
-        boxCollider.offset = new Vector2(boxCollider.offset.x, colliderBottom + standingColliderSize.y / 2f);
+        boxCollider.offset = new Vector2(
+            boxCollider.offset.x,
+            colliderBottom + standingColliderSize.y / 2f
+        );
     }
 
     void Update()
@@ -54,7 +61,7 @@ public class PlayerMovement : MonoBehaviour
         HandleCrouch();
         HandleJump();
         
-        // Новый метод для стрельбы
+        // Стрельба
         HandleShooting();
 
         UpdateAnimation();
@@ -66,7 +73,6 @@ public class PlayerMovement : MonoBehaviour
         float currentSpeed = isCrouching ? crouchSpeed : moveSpeed;
         rb.velocity = new Vector2(moveInput * currentSpeed, rb.velocity.y);
 
-        // Персонаж будет автоматически флипаться влево/вправо при движении
         if (moveInput != 0)
             spriteRenderer.flipX = (moveInput < 0);
     }
@@ -124,36 +130,37 @@ public class PlayerMovement : MonoBehaviour
         {
             // Смотрим влево
             spriteRenderer.flipX = true;
-            Shoot(Vector2.left);
+            Shoot(Vector2.left, firePointLeft);
         }
         else if (Input.GetKeyDown(KeyCode.L))
         {
             // Смотрим вправо
             spriteRenderer.flipX = false;
-            Shoot(Vector2.right);
+            Shoot(Vector2.right, firePointRight);
         }
         else if (Input.GetKeyDown(KeyCode.I))
         {
-            // Стреляем вверх (flipX не нужен, т.к. это горизонтальная зеркализация)
-            Shoot(Vector2.up);
+            // Стреляем вверх (flipX не меняем, т.к. это горизонтальный флип)
+            Shoot(Vector2.up, firePointUp);
         }
         else if (Input.GetKeyDown(KeyCode.K))
         {
             // Стреляем вниз
-            Shoot(Vector2.down);
+            Shoot(Vector2.down, firePointDown);
         }
     }
 
-    void Shoot(Vector2 direction)
+    // Передаём направление и конкретный firePoint
+    void Shoot(Vector2 direction, Transform specificFirePoint)
     {
-        if (bulletPrefab == null || firePoint == null)
+        if (bulletPrefab == null || specificFirePoint == null)
         {
-            Debug.LogWarning("Не назначены bulletPrefab или firePoint!");
+            Debug.LogWarning("Не назначен bulletPrefab или один из firePoint-ов!");
             return;
         }
 
         // Создаём пулю
-        GameObject bullet = Instantiate(bulletPrefab, firePoint.position, Quaternion.identity);
+        GameObject bullet = Instantiate(bulletPrefab, specificFirePoint.position, Quaternion.identity);
 
         // У пули должен быть Rigidbody2D для задания скорости
         Rigidbody2D bulletRb = bullet.GetComponent<Rigidbody2D>();
